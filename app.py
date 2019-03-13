@@ -16,13 +16,14 @@ from nba_utilities.db_connection_manager import establish_db_connection
 server = flask.Flask(__name__)
 server.secret_key = os.environ.get('secret_key', str(randint(0, 1000000)))
 app = dash.Dash(__name__, server=server)
+# app = dash.Dash()
 
 app.title = "Madness"
 app.css.append_css({'external_url':"https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"})
 conn = establish_db_connection('sqlalchemy').connect()
 
 teams = pd.read_sql('SELECT DISTINCT team FROM kenpom_four_factors_data', con=conn)
-teams = [ row['team'] for index, row in teams.iterrows() ]
+teams = [ row['team'].strip() for index, row in teams.iterrows() ]
 teams = [ {'label': team, 'value': team} for team in sorted(teams) ]
 
 def serve_layout():
@@ -41,6 +42,12 @@ def serve_layout():
                             html.Div(html.H1(children='Select Team B: ', style=styling.filter_title), className='col-2'),
                             html.Div(dcc.Dropdown(id='team-b-dropdown', options=teams, value='Gonzaga'), className='col-4'),
                                 ]),
+                    # html.Div(style={'padding':10}),
+                    # html.Div(className='row', children=[
+                    #         html.Div(className='col-5'),
+                    #         html.Button('Predict', id='prediction-button'),
+                    #         html.Div(className='col-5'),
+                    # ]),
                     html.Div(style={'padding':10}),
                     html.Div(className='row', children=[
                             html.Div(className='col-5'),
@@ -81,6 +88,23 @@ def update_value(team_a, team_b):
     if spread > 0:
         spread = '+%s'%spread
     return '{} {}'.format(team_b, spread)
+
+
+# @app.callback(
+#     Output('spread', 'children'),
+#     [Input('team-a-dropdown', 'value'),
+#      Input('team-b-dropdown', 'value'),
+#      Input('prediction-button', 'n_clicks')]
+# )
+# def update_value(team_a, team_b, n_clicks):
+#     if (n_clicks is None) | (n_clicks == 0):
+#         return None
+#
+#     spread = helper.four_factors_algo(team_a, team_b)
+#     if spread > 0:
+#         spread = '+%s'%spread
+#     return '{} {}'.format(team_b, spread)
+
 
 if __name__ == "__main__":
     app.server.run_server(debug=True, threaded=True)
